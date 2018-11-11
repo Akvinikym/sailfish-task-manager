@@ -8,7 +8,7 @@ Dialog {
     property string name
     property string description
     property variant tags
-    property int urgency: 0
+    property int urgency
     property date due
 
     Column {
@@ -25,7 +25,7 @@ Dialog {
             width: parent.width
 
             text: name
-            validator: RegExpValidator { regExp: /^[a-z ,.'-]+$/i }
+            validator: RegExpValidator { regExp: /^[a-z ,.'-]{1,24}$/i }
             placeholderText: "Go jogging..."
             label: "Task name"
 
@@ -46,7 +46,14 @@ Dialog {
             id: tagsField
             width: parent.width
 
-            text: ""
+            text: {
+                var str = "";
+                for (var i = 0; i < tags.length; i++) {
+                    str += tags[i] + ", ";
+                }
+                str.substring(0, str.length - 2);
+            }
+
             validator: RegExpValidator { regExp: /^[a-z ,.'-]+$/i }
             placeholderText: "health, sport..."
             label: "Tags, splitted by comma"
@@ -66,8 +73,15 @@ Dialog {
         }
         ValueButton {
             id: dueFieldDate
-            property date dueDate
-            property bool dueDateIsSet: false
+            property date dueDate: {
+                var theDate = new Date();
+                theDate.setDate(due.getDate());
+                theDate.setMonth(due.getMonth());
+                theDate.setFullYear(due.getFullYear());
+                return theDate;
+            }
+
+            property bool dueDateIsSet: dueDate !== null
 
             label: "Due date"
             value: dueDate.toDateString()
@@ -82,8 +96,15 @@ Dialog {
         }
         ValueButton {
             id: dueFieldTime
-            property date dueTime
-            property bool dueTimeIsSet: false
+            property date dueTime: {
+                var theTime = new Date();
+                theTime.setHours(due.getHours());
+                theTime.setMinutes(due.getMinutes());
+                theTime.setSeconds(due.getSeconds());
+                return theTime;
+            }
+
+            property bool dueTimeIsSet: dueTime !== null
 
             label: "Due time"
             value: dueTime.toTimeString()
@@ -101,8 +122,8 @@ Dialog {
     canAccept: !nameField.errorHighlight &&
                !descriptionField.errorHighlight &&
                !tagsField.errorHighlight &&
-               dueFieldDate.dueDateIsSet &&
-               dueFieldTime.dueTimeIsSet
+               dueFieldDate.dueDateIsSet && dueFieldTime.dueTimeIsSet &&
+               Date.fromLocaleString(Qt.locale(), dueFieldDate.value + " " + dueFieldTime.value, "ddd MMM d yyyy hh:mm:ss") > Date.now()
 
     onDone: {
         if (result == DialogResult.Accepted) {
@@ -110,8 +131,7 @@ Dialog {
             description = descriptionField.text
             tags = tagsField.text.split(",")
             urgency = urgencyField.sliderValue
-            due = Date.fromLocaleString(Qt.locale(), dueFieldDate.value + " " + dueFieldTime.value, "ddd MMMM d yyyy hh:mm:ss")
-            console.log(dueFieldDate.value + " " + dueFieldTime.value);
+            due = Date.fromLocaleString(Qt.locale(), dueFieldDate.value + " " + dueFieldTime.value, "ddd MMM d yyyy hh:mm:ss")
         }
     }
 }
