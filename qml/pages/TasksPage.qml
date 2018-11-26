@@ -12,46 +12,76 @@ Page {
     property int currentMode: todayTasksMode
 
     readonly property int urgencyLow: 0
-    property int urgencyMedium: 1
-    property int urgencyHigh: 2
+    readonly property int urgencyMedium: 1
+    readonly property int urgencyHigh: 2
 
-    function refreshTasks() {
+    property var allTasks: [{name: "Make projecttttttttttttt",
+                             description: "Make a QML project",
+                             tags: "studying",                       // TODO: must be a list
+                             urgency: 0,
+                             due: "28-11-2018 12:00:00",
+                             trackedTime: "01:52:03",
+                             forToday: true,
+                             isTimerOn: false,
+                             isCompleted: false},
+                            {name: "Make assignment",
+                             description: "Make a QML project",
+                             tags: "studying",
+                             urgency: 1,
+                             due: "27-11-2018 11:00:00",
+                             trackedTime: "02:43:03",
+                             forToday: true,
+                             isTimerOn: false,
+                             isCompleted: false},
+                            {name: "Cook dinner",
+                             description: "Prepare macorones",
+                             tags: "cooking",
+                             urgency: 2,
+                             due: "29-11-2018 20:00:00",
+                             forToday: false,
+                             trackedTime: "00:12:03",
+                             isCompleted: true
+                            }]
+
+    function showTasks() {
         listModel.clear();
+        // TODO: Dao.getAllTasks() instead of using property allTasks
         switch (currentMode) {
             case mainPage.todayTasksMode:
-                // TODO: Dao.getTodayTasks()
-                listModel.append({
-                    name: "Make projecttttttttttttt",
-                    description: "Make a QML project",
-                    tags: "studying",                       // TODO: must be a list
-                    urgency: 0,
-                    due: "28-11-2018 12:00:00",
-                    trackedTime: "01:52:03",
-                    isCompleted: false
-                });
-                listModel.append({
-                    name: "Make assignment",
-                    description: "Make a QML project",
-                    tags: "studying",
-                    urgency: 1,
-                    due: "27-11-2018 13:00:00",
-                    trackedTime: "02:43:03",
-                    isCompleted: false
-                });
+                var todayTasks = allTasks.filter(function (task) { return task.forToday && !task.isCompleted});
+                listModel.append(todayTasks);
                 break;
-            case mainPage.dueTasksMode: return "Tasks by due date";
-            case mainPage.urgencyTasksMode: return "Tasks by urgency";
+            case mainPage.dueTasksMode:
+                var sortedByDue = allTasks
+                  .filter(function (task) { return !task.isCompleted})
+                  .sort(function (t1, t2) {
+                    var dateT1 = Date.fromLocaleString(Qt.locale(), t1.due, "dd-MM-yyyy hh:mm:ss");
+                    var dateT2 = Date.fromLocaleString(Qt.locale(), t2.due, "dd-MM-yyyy hh:mm:ss")
+                    if (dateT1 > dateT2) {
+                        return 1;
+                    } else if (dateT1 < dateT2) {
+                        return -1;
+                    }
+                    return 0;
+                });
+                listModel.append(sortedByDue);
+                break;
+            case mainPage.urgencyTasksMode:
+                var sortedByUrgency = allTasks
+                  .filter(function (task) { return !task.isCompleted})
+                  .sort(function (t1, t2) {
+                    if (t1.urgency < t2.urgency) {
+                        return 1;
+                    } else if (t1.urgency > t2.urgency) {
+                        return -1;
+                    }
+                    return 0;
+                });
+                listModel.append(sortedByUrgency);
+                break;
             case mainPage.completedTasksMode:
-                // TODO: Dao.getCompletedTasks()
-                listModel.append({
-                                     name: "Cook dinner",
-                                     description: "Make a QML project",
-                                     tags: "cooking",
-                                     urgency: 2,
-                                     due: "29-11-2018 20:00:00",
-                                     trackedTime: "00:12:03",
-                                     isCompleted: true
-                                 })
+                var completedTasks = allTasks.filter(function (task) { return task.isCompleted});
+                listModel.append(completedTasks);
                 break;
         }
     }
@@ -124,38 +154,43 @@ Page {
                 }
             }
 
+            onClicked: {
+                var dialog = pageStack.push(Qt.resolvedUrl("TaskDialog.qml"))
+                dialog.name = model.name
+                dialog.description = model.description
+                dialog.tags = model.tags
+                dialog.urgency = model.urgency
+                dialog.due = Date.fromLocaleString(Qt.locale(), model.due, "dd-MM-yyyy hh:mm:ss")
+                dialog.accepted.connect(function() {
+                    listModel.append({
+                                         name: dialog.name,
+                                         description: dialog.description,
+                                         tags: dialog.tags,
+                                         urgency: dialog.urgency,
+                                         due: dialog.due.toLocaleString(Qt.locale(), "dd-MM-yyyy hh:mm:ss"),
+                                         trackedTime: model.trackedTime,
+                                         isTimerOn: model.isTimerOn,
+                                         isCompleted: model.isCompleted
+                                     });
+                    listModel.remove(model);
+                })
+            }
+
             menu: ContextMenu {
                 MenuItem {
-                    text: "Show Task"
+                    text: "Start Timer"
                     onClicked: {
-                        var dialog = pageStack.push(Qt.resolvedUrl("TaskDialog.qml"))
-                        dialog.name = model.name
-                        dialog.description = model.description
-                        dialog.tags = model.tags
-                        dialog.urgency = model.urgency
-                        dialog.due = Date.fromLocaleString(Qt.locale(), model.due, "dd-MM-yyyy hh:mm:ss")
-                        dialog.accepted.connect(function() {
-                            listModel.append({
-                                                 name: dialog.name,
-                                                 description: dialog.description,
-                                                 tags: dialog.tags,
-                                                 urgency: dialog.urgency,
-                                                 due: dialog.due.toLocaleString(Qt.locale(), "dd-MM-yyyy hh:mm:ss"),
-                                                 trackedTime: model.trackedTime,
-                                                 isCompleted: model.isCompleted
-                                             });
-                            listModel.remove(model);
-                        })
+
                     }
                 }
                 MenuItem {
                     text: "Complete Task"
-                    onClicked: listModel.remove(model)
+                    onClicked: listModel.remove(model) // Dao.completeTask()
                 }
 
                 MenuItem {
                     text: "Remove Task"
-                    onClicked: listModel.remove(model.index)
+                    onClicked: listModel.remove(model.index) // Dao.removeTask()
                 }
             }
         }
@@ -172,6 +207,7 @@ Page {
                 onClicked: {
                     var dialog = pageStack.push(Qt.resolvedUrl("TaskDialog.qml"))
                     dialog.accepted.connect(function() {
+                        // TODO: Dao.createNewTask(...)
                         listModel.append({
                                              name: dialog.name,
                                              description: dialog.description,
@@ -179,6 +215,7 @@ Page {
                                              urgency: dialog.urgency,
                                              due: dialog.due.toLocaleString(Qt.locale(), "dd-MM-yyyy hh:mm:ss"),
                                              trackedTime: "00:00:00",
+                                             isTimerOn: false,
                                              isCompleted: false
                                          });
                     })
@@ -192,32 +229,32 @@ Page {
             }
         }
 
-        Component.onCompleted: refreshTasks()
+        Component.onCompleted: showTasks()
     }
 
     ButtonLayout {
         id: buttons
-        anchors.bottom: parent.bottom
+        anchors {bottom: parent.bottom; bottomMargin: 20}
         width: parent.width
 
         Button {
             text: "today"
-            onClicked: { currentMode = todayTasksMode; refreshTasks(); }
+            onClicked: { currentMode = todayTasksMode; showTasks(); }
         }
 
         Button {
             text: "due sort"
-            onClicked: { currentMode = dueTasksMode; refreshTasks(); }
+            onClicked: { currentMode = dueTasksMode; showTasks(); }
         }
 
         Button {
             text: "urgency sort"
-            onClicked: { currentMode = urgencyTasksMode; refreshTasks(); }
+            onClicked: { currentMode = urgencyTasksMode; showTasks(); }
         }
 
         Button {
             text: "completed"
-            onClicked: { currentMode = completedTasksMode; refreshTasks(); }
+            onClicked: { currentMode = completedTasksMode; showTasks(); }
         }
     }
 }
