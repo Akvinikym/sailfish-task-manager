@@ -15,37 +15,52 @@ Page {
     readonly property int urgencyMedium: 1
     readonly property int urgencyHigh: 2
 
-    property var allTasks: [{name: "Make projecttttttttttttt",
+    property var tasks: [{name: "Make projecttttttttttttt",
                              description: "Make a QML project",
                              tags: "studying",                       // TODO: must be a list
                              urgency: 0,
                              due: "28-11-2018 12:00:00",
-                             trackedTime: "01:52:03",
+                             trackedTime: 4228,
                              forToday: true,
                              isTimerOn: false,
+                             timerStartedAt: Date.now(),
                              isCompleted: false},
                             {name: "Make assignment",
                              description: "Make a QML project",
                              tags: "studying",
                              urgency: 1,
                              due: "27-11-2018 11:00:00",
-                             trackedTime: "02:43:03",
+                             trackedTime: 424242,
                              forToday: true,
                              isTimerOn: false,
+                             timerStartedAt: Date.now(),
                              isCompleted: false},
                             {name: "Cook dinner",
                              description: "Prepare macorones",
                              tags: "cooking",
                              urgency: 2,
                              due: "29-11-2018 20:00:00",
+                             trackedTime: 100,
                              forToday: false,
-                             trackedTime: "00:12:03",
+                             isTimerOn: false,
+                             timerStartedAt: Date.now(),
                              isCompleted: true
                             }]
 
     function showTasks() {
         listModel.clear();
+
+        // update tasks before showing them
+        var allTasks = tasks.map(function (t) {
+            if (!t.isTimerOn) return t;
+
+            t.trackedTime = Date.now() - t.timerStartedAt;
+            // TODO: Dao.updateTask(t)
+            return t;
+        });
+
         // TODO: Dao.getAllTasks() instead of using property allTasks
+        // show tasks
         switch (currentMode) {
             case mainPage.todayTasksMode:
                 var todayTasks = allTasks.filter(function (task) { return task.forToday && !task.isCompleted});
@@ -149,7 +164,11 @@ Page {
                         anchors.right: parent.right
                         color: "white"
                         font.pointSize: 50
-                        text: model.trackedTime
+                        text: {
+                            var secs = new Date();
+                            secs.setSeconds(model.trackedTime);
+                            return secs.toLocaleString(Qt.locale(), "hh:mm:ss");
+                        }
                     }
                 }
             }
@@ -169,7 +188,9 @@ Page {
                                          urgency: dialog.urgency,
                                          due: dialog.due.toLocaleString(Qt.locale(), "dd-MM-yyyy hh:mm:ss"),
                                          trackedTime: model.trackedTime,
+                                         forToday: model.forToday,
                                          isTimerOn: model.isTimerOn,
+                                         timerStartedAt: model.timerStartedAt,
                                          isCompleted: model.isCompleted
                                      });
                     listModel.remove(model);
@@ -180,7 +201,7 @@ Page {
                 MenuItem {
                     text: "Start Timer"
                     onClicked: {
-
+                        // TODO: Dao.startTimer() - fields isTimerOn and timerStartedAt are to be updated
                     }
                 }
                 MenuItem {
@@ -214,8 +235,10 @@ Page {
                                              tags: dialog.tags,
                                              urgency: dialog.urgency,
                                              due: dialog.due.toLocaleString(Qt.locale(), "dd-MM-yyyy hh:mm:ss"),
-                                             trackedTime: "00:00:00",
+                                             trackedTime: 0,
+                                             forToday: false,
                                              isTimerOn: false,
+                                             timerStartedAt: Date.now(),
                                              isCompleted: false
                                          });
                     })
