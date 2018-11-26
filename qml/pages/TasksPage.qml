@@ -1,6 +1,7 @@
 import QtQuick 2.0
 import Sailfish.Silica 1.0
 import QtQuick.Layouts 1.1
+import "../db"
 
 Page {
     id: mainPage
@@ -15,29 +16,40 @@ Page {
     property int urgencyMedium: 1
     property int urgencyHigh: 2
 
+    Dao {
+        id: dao
+    }
+
     function refreshTasks() {
         listModel.clear();
         switch (currentMode) {
-            case mainPage.todayTasksMode:
-                // TODO: Dao.getTodayTasks()
-                listModel.append({
-                    name: "Make projecttttttttttttt",
-                    description: "Make a QML project",
-                    tags: "studying",                       // TODO: must be a list
-                    urgency: 0,
-                    due: "28-11-2018 12:00:00",
-                    trackedTime: "01:52:03",
-                    isCompleted: false
-                });
-                listModel.append({
-                    name: "Make assignment",
-                    description: "Make a QML project",
-                    tags: "studying",
-                    urgency: 1,
-                    due: "27-11-2018 13:00:00",
-                    trackedTime: "02:43:03",
-                    isCompleted: false
-                });
+        case mainPage.todayTasksMode: {
+           dao.getTasks(function(tasks) {
+              for (var i = 0; i < tasks.length; i++) {
+                  var task = tasks.item(i);
+                  listModel.append(task);
+              }
+           });
+        }
+//                // TODO: Dao.getTodayTasks()
+//                listModel.append({
+//                    name: "Make projecttttttttttttt",
+//                    description: "Make a QML project",
+//                    tags: "studying",                       // TODO: must be a list
+//                    urgency: 0,
+//                    due: "28-11-2018 12:00:00",
+//                    trackedTime: "01:52:03",
+//                    isCompleted: false
+//                });
+//                listModel.append({
+//                    name: "Make assignment",
+//                    description: "Make a QML project",
+//                    tags: "studying",
+//                    urgency: 1,
+//                    due: "27-11-2018 13:00:00",
+//                    trackedTime: "02:43:03",
+//                    isCompleted: false
+//                });
                 break;
             case mainPage.dueTasksMode: return "Tasks by due date";
             case mainPage.urgencyTasksMode: return "Tasks by urgency";
@@ -172,16 +184,16 @@ Page {
                 onClicked: {
                     var dialog = pageStack.push(Qt.resolvedUrl("TaskDialog.qml"))
                     dialog.accepted.connect(function() {
-                        listModel.append({
-                                             name: dialog.name,
-                                             description: dialog.description,
-                                             tags: dialog.tags,
-                                             urgency: dialog.urgency,
-                                             due: dialog.due.toLocaleString(Qt.locale(), "dd-MM-yyyy hh:mm:ss"),
-                                             trackedTime: "00:00:00",
-                                             isCompleted: false
-                                         });
-                    })
+                        dao.insertTask({
+                                           name: dialog.name,
+                                           description: dialog.description,
+                                           tags: dialog.tags,
+                                           urgency: dialog.urgency,
+                                           due: dialog.due.toLocaleString(Qt.locale(), "dd-MM-yyyy hh:mm:ss"),
+                                           trackedTime: "00:00:00",
+                                           isCompleted: false
+                                       });
+                    });
                 }
             }
             MenuItem {

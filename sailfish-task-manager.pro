@@ -25,7 +25,8 @@ DISTFILES += qml/sailfish-task-manager.qml \
     translations/*.ts \
     sailfish-task-manager.desktop \
     qml/pages/TasksPage.qml \
-    qml/pages/TaskDialog.qml
+    qml/pages/TaskDialog.qml \
+    qml/db/Dao.qml
 
 SAILFISHAPP_ICONS = 86x86 108x108 128x128 172x172
 
