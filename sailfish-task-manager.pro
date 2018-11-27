@@ -14,7 +14,8 @@ TARGET = sailfish-task-manager
 
 CONFIG += sailfishapp
 
-SOURCES += src/sailfish-task-manager.cpp
+SOURCES += src/sailfish-task-manager.cpp \
+    src/taskrefresher.cpp
 
 DISTFILES += qml/sailfish-task-manager.qml \
     qml/cover/CoverPage.qml \
@@ -39,3 +40,6 @@ CONFIG += sailfishapp_i18n
 # following TRANSLATIONS line. And also do not forget to
 # modify the localized app name in the the .desktop file.
 TRANSLATIONS += translations/sailfish-task-manager-de.ts
+
+HEADERS += \
+    src/taskrefresher.h

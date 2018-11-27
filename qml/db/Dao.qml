@@ -6,6 +6,7 @@ QtObject {
 
     function initTasksDatabase() {
         db.transaction(function (tx) {
+//            tx.executeSql("DROP TABLE tasks");
             tx.executeSql("CREATE TABLE IF NOT EXISTS tasks (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
@@ -13,10 +14,10 @@ QtObject {
                 tags TEXT NOT NULL,
                 urgency INTEGER NOT NULL,
                 due TEXT NOT NULL,
-                trackedTime TEXT NOT NULL,
+                trackedTime INTEGER NOT NULL,
                 forToday BOOLEAN,
                 isTimerOn BOOLEAN,
-                timerStartedAt TEXT NOT NULL,
+                timerLastMeasure INT NOT NULL,
                 isCompleted BOOLEAN
             );");
         });
@@ -36,10 +37,10 @@ QtObject {
     function insertTask(task, callback) {
         db.transaction(function (tx) {
             tx.executeSql("INSERT INTO tasks
-                (name, description, tags, urgency, due, trackedTime, forToday, isTimerOn, timerStartedAt, isCompleted)
+                (name, description, tags, urgency, due, trackedTime, forToday, isTimerOn, timerLastMeasure, isCompleted)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 [task.name, task.description, task.tags, task.urgency, task.due,
-                 task.trackedTime, task.forToday, task.isTimerOn, task.timerStartedAt, task.isCompleted]);
+                 task.trackedTime, task.forToday, task.isTimerOn, task.timerLastMeasure, task.isCompleted]);
         });
         callback(task);
     }
@@ -55,14 +56,6 @@ QtObject {
         db.transaction(function (tx) {
             tx.executeSql("DELETE FROM tasks WHERE name = ?", [task.name]);
             insertTask(task, callback);
-        });
-    }
-
-    function startTimer(taskname) {
-        db.transaction(function (tx) {
-            tx.executeSql("UPDATE tasks
-                SET isTimerOn = true, timerStartedAt = ?
-                WHERE name = ?", [Date.now(), taskname]);
         });
     }
 

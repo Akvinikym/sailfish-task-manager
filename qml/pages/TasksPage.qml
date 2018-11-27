@@ -2,6 +2,7 @@ import QtQuick 2.0
 import Sailfish.Silica 1.0
 import QtQuick.Layouts 1.1
 import "../db"
+import refresher.TaskManager 1.0
 
 Page {
     id: mainPage
@@ -26,10 +27,25 @@ Page {
 
             // update tasks
             var allTasks = tasks.map(function (t) {
-                if (!t.isTimerOn) return t;
+                if (t.isTimerOn) {
+                    var measure = t.timerLastMeasure;
+                    t.trackedTime += Date.now() - measure;
+                    t.timerLastMeasure = Date.now();
 
-                t.trackedTime = Date.now() - t.timerStartedAt;
-                // TODO: Dao.updateTask(t)
+                    dao.updateTask({
+                                       name: t.name,
+                                       description: t.description,
+                                       tags: t.tags,
+                                       urgency: t.urgency,
+                                       due: t.due.toLocaleString(Qt.locale(), "dd-MM-yyyy hh:mm:ss"),
+                                       trackedTime: t.trackedTime,
+                                       forToday: t.forToday,
+                                       isTimerOn: t.isTimerOn,
+                                       timerLastMeasure: t.timerLastMeasure,
+                                       isCompleted: t.isCompleted
+                                   },
+                                   function (task) {});
+                }
                 return t;
             });
 
@@ -37,7 +53,7 @@ Page {
             switch (currentMode) {
             case mainPage.todayTasksMode:
                 var todayTasks = allTasks
-                    .filter(function (task) { return task.forToday && !task.isCompleted});
+                    .filter(function (task) { return task.forToday && !task.isCompleted; });
                 listModel.append(todayTasks);
                 break;
             case mainPage.dueTasksMode:
@@ -86,10 +102,10 @@ Page {
             id: listHeader
             title:
                 switch (mainPage.currentMode) {
-                case mainPage.todayTasksMode: return "Tasks for today";
-                case mainPage.dueTasksMode: return "Tasks by due date";
-                case mainPage.urgencyTasksMode: return "Tasks by urgency";
-                case mainPage.completedTasksMode: return "Completed tasks";
+                    case mainPage.todayTasksMode: return "Tasks for today";
+                    case mainPage.dueTasksMode: return "Tasks by due date";
+                    case mainPage.urgencyTasksMode: return "Tasks by urgency";
+                    case mainPage.completedTasksMode: return "Completed tasks";
                 }
         }
         
@@ -141,9 +157,14 @@ Page {
                         color: "white"
                         font.pointSize: 50
                         text: {
-                            var secs = new Date();
-                            secs.setSeconds(model.trackedTime);
-                            return secs.toLocaleString(Qt.locale(), "hh:mm:ss");
+                            var milisec = model.trackedTime;
+                            var seconds = parseInt((milisec/1000)%60),
+                                    minutes = parseInt((milisec/(1000*60))%60),
+                                    hours = parseInt((milisec/(1000*60*60))%24);
+                            hours = (hours < 10) ? "0" + hours : hours;
+                            minutes = (minutes < 10) ? "0" + minutes : minutes;
+                            seconds = (seconds < 10) ? "0" + seconds : seconds;
+                            return hours + ":" + minutes + ":" + seconds;
                         }
                     }
                 }
@@ -166,7 +187,7 @@ Page {
                                        trackedTime: model.trackedTime,
                                        forToday: model.forToday,
                                        isTimerOn: model.isTimerOn,
-                                       timerStartedAt: model.timerStartedAt,
+                                       timerLastMeasure: model.timerLastMeasure,
                                        isCompleted: model.isCompleted
                                    },
                                    function (task) {
@@ -177,9 +198,23 @@ Page {
             
             menu: ContextMenu {
                 MenuItem {
-                    text: "Start Timer"
+                    text: model.isTimerOn ? "Stop Timer" : "Start Timer"
                     onClicked: {
-                        // TODO: Dao.startTimer() - fields isTimerOn and timerStartedAt are to be updated
+                        dao.updateTask({
+                                           name: model.name,
+                                           description: model.description,
+                                           tags: model.tags,
+                                           urgency: model.urgency,
+                                           due: model.due.toLocaleString(Qt.locale(), "dd-MM-yyyy hh:mm:ss"),
+                                           trackedTime: model.trackedTime,
+                                           forToday: false,
+                                           isTimerOn: !model.isTimerOn,
+                                           timerLastMeasure: Date.now(),
+                                           isCompleted: model.isCompleted
+                                       },
+                                       function (task) {
+                                            showTasks();
+                                       });
                     }
                 }
                 MenuItem {
@@ -195,7 +230,7 @@ Page {
                                                trackedTime: model.trackedTime,
                                                forToday: false,
                                                isTimerOn: model.isTimerOn,
-                                               timerStartedAt: model.timerStartedAt,
+                                               timerLastMeasure: model.timerLastMeasure,
                                                isCompleted: model.isCompleted
                                            },
                                            function (task) {
@@ -211,7 +246,7 @@ Page {
                                                trackedTime: model.trackedTime,
                                                forToday: true,
                                                isTimerOn: model.isTimerOn,
-                                               timerStartedAt: model.timerStartedAt,
+                                               timerLastMeasure: model.timerLastMeasure,
                                                isCompleted: model.isCompleted
                                            },
                                            function (task) {
@@ -233,7 +268,7 @@ Page {
                                            trackedTime: model.trackedTime,
                                            forToday: false,
                                            isTimerOn: false,
-                                           timerStartedAt: model.timerStartedAt,
+                                           timerLastMeasure: model.timerLastMeasure,
                                            isCompleted: true
                                        },
                                        function (task) {
@@ -272,7 +307,7 @@ Page {
                                            trackedTime: 0,
                                            forToday: false,
                                            isTimerOn: false,
-                                           timerStartedAt: Date.now(),
+                                           timerLastMeasure: Date.now(),
                                            isCompleted: false
                                        },
                                        function(task) {
@@ -309,6 +344,12 @@ Page {
         Button {
             text: "completed"
             onClicked: { currentMode = completedTasksMode; showTasks(); }
+        }
+    }
+
+    Refresher {
+        onSecondPassed: {
+
         }
     }
 }
