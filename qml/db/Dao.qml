@@ -14,6 +14,9 @@ QtObject {
                 urgency INTEGER NOT NULL,
                 due TEXT NOT NULL,
                 trackedTime TEXT NOT NULL,
+                forToday BOOLEAN,
+                isTimerOn BOOLEAN,
+                timerStartedAt TEXT NOT NULL,
                 isCompleted BOOLEAN
             );");
         });
@@ -27,12 +30,15 @@ QtObject {
         });
     }
     //function retrieveBooks(callback) {...}
-    function insertTask(task) {
+    function insertTask(task, callback) {
         db.transaction(function (tx) {
-            tx.executeSql("INSERT INTO tasks (name, descripton, tags, urgency, due, trackedTime)
-                VALUES (?, ?, ?, ?, ?, ?)",
-                [task.name, task.description, task.tags, task.urgency, task.due, task.trackedTime]);
+            tx.executeSql("INSERT INTO tasks
+                (name, description, tags, urgency, due, trackedTime, forToday, isTimerOn, timerStartedAt, isCompleted)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                [task.name, task.description, task.tags, task.urgency, task.due,
+                 task.trackedTime, task.forToday, task.isTimerOn, task.timerStartedAt, task.isCompleted]);
         });
+        callback(task);
     }
     //function updateBook(id, author, title) {...}
     //function deleteBook(id) {...}

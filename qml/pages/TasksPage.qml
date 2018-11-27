@@ -13,58 +13,101 @@ Page {
     property int currentMode: todayTasksMode
 
     readonly property int urgencyLow: 0
-    property int urgencyMedium: 1
-    property int urgencyHigh: 2
+    readonly property int urgencyMedium: 1
+    readonly property int urgencyHigh: 2
 
     Dao {
         id: dao
     }
 
-    function refreshTasks() {
+    property var tasks: [{name: "Make projecttttttttttttt",
+            description: "Make a QML project",
+            tags: "studying",                       // TODO: must be a list
+            urgency: 0,
+            due: "28-11-2018 12:00:00",
+            trackedTime: 4228,
+            forToday: true,
+            isTimerOn: false,
+            timerStartedAt: Date.now(),
+            isCompleted: false},
+        {name: "Make assignment",
+            description: "Make a QML project",
+            tags: "studying",
+            urgency: 1,
+            due: "27-11-2018 11:00:00",
+            trackedTime: 424242,
+            forToday: true,
+            isTimerOn: false,
+            timerStartedAt: Date.now(),
+            isCompleted: false},
+        {name: "Cook dinner",
+            description: "Prepare macorones",
+            tags: "cooking",
+            urgency: 2,
+            due: "29-11-2018 20:00:00",
+            trackedTime: 100,
+            forToday: false,
+            isTimerOn: false,
+            timerStartedAt: Date.now(),
+            isCompleted: true
+        }]
+
+    function showTasks() {
         listModel.clear();
+
+        // update tasks before showing them
+        var allTasks = tasks.map(function (t) {
+            if (!t.isTimerOn) return t;
+
+            t.trackedTime = Date.now() - t.timerStartedAt;
+            // TODO: Dao.updateTask(t)
+            return t;
+        });
+
         switch (currentMode) {
         case mainPage.todayTasksMode: {
-           dao.getTasks(function(tasks) {
-              for (var i = 0; i < tasks.length; i++) {
-                  var task = tasks.item(i);
-                  listModel.append(task);
-              }
-           });
+            dao.getTasks(function(tasks) {
+                for (var i = 0; i < tasks.length; i++) {
+                    var task = tasks.item(i);
+                    if (task.forToday && !task.isCompleted) {
+                        listModel.append(task);
+                    }
+                }
+            });
         }
-//                // TODO: Dao.getTodayTasks()
-//                listModel.append({
-//                    name: "Make projecttttttttttttt",
-//                    description: "Make a QML project",
-//                    tags: "studying",                       // TODO: must be a list
-//                    urgency: 0,
-//                    due: "28-11-2018 12:00:00",
-//                    trackedTime: "01:52:03",
-//                    isCompleted: false
-//                });
-//                listModel.append({
-//                    name: "Make assignment",
-//                    description: "Make a QML project",
-//                    tags: "studying",
-//                    urgency: 1,
-//                    due: "27-11-2018 13:00:00",
-//                    trackedTime: "02:43:03",
-//                    isCompleted: false
-//                });
-                break;
-            case mainPage.dueTasksMode: return "Tasks by due date";
-            case mainPage.urgencyTasksMode: return "Tasks by urgency";
-            case mainPage.completedTasksMode:
-                // TODO: Dao.getCompletedTasks()
-                listModel.append({
-                                     name: "Cook dinner",
-                                     description: "Make a QML project",
-                                     tags: "cooking",
-                                     urgency: 2,
-                                     due: "29-11-2018 20:00:00",
-                                     trackedTime: "00:12:03",
-                                     isCompleted: true
-                                 })
-                break;
+        break;
+        case mainPage.dueTasksMode:
+            var sortedByDue = allTasks
+            .filter(function (task) { return !task.isCompleted})
+            .sort(function (t1, t2) {
+                var dateT1 = Date.fromLocaleString(Qt.locale(), t1.due, "dd-MM-yyyy hh:mm:ss");
+                var dateT2 = Date.fromLocaleString(Qt.locale(), t2.due, "dd-MM-yyyy hh:mm:ss")
+                if (dateT1 > dateT2) {
+                    return 1;
+                } else if (dateT1 < dateT2) {
+                    return -1;
+                }
+                return 0;
+            });
+            listModel.append(sortedByDue);
+            break;
+        case mainPage.urgencyTasksMode:
+            var sortedByUrgency = allTasks
+            .filter(function (task) { return !task.isCompleted})
+            .sort(function (t1, t2) {
+                if (t1.urgency < t2.urgency) {
+                    return 1;
+                } else if (t1.urgency > t2.urgency) {
+                    return -1;
+                }
+                return 0;
+            });
+            listModel.append(sortedByUrgency);
+            break;
+        case mainPage.completedTasksMode:
+            var completedTasks = allTasks.filter(function (task) { return task.isCompleted});
+            listModel.append(completedTasks);
+            break;
         }
     }
 
@@ -77,11 +120,11 @@ Page {
             id: listHeader
             title:
                 switch (mainPage.currentMode) {
-                    case mainPage.todayTasksMode: return "Tasks for today";
-                    case mainPage.dueTasksMode: return "Tasks by due date";
-                    case mainPage.urgencyTasksMode: return "Tasks by urgency";
-                    case mainPage.completedTasksMode: return "Completed tasks";
-            }
+                case mainPage.todayTasksMode: return "Tasks for today";
+                case mainPage.dueTasksMode: return "Tasks by due date";
+                case mainPage.urgencyTasksMode: return "Tasks by urgency";
+                case mainPage.completedTasksMode: return "Completed tasks";
+                }
         }
 
         model: ListModel {
@@ -105,9 +148,9 @@ Page {
                         font.pointSize: 50
                         text:
                             switch (model.urgency) {
-                                case mainPage.urgencyLow: return "L";
-                                case mainPage.urgencyMedium: return "M";
-                                case mainPage.urgencyHigh: return "H";
+                            case mainPage.urgencyLow: return "L";
+                            case mainPage.urgencyMedium: return "M";
+                            case mainPage.urgencyHigh: return "H";
                             }
                     }
 
@@ -131,43 +174,55 @@ Page {
                         anchors.right: parent.right
                         color: "white"
                         font.pointSize: 50
-                        text: model.trackedTime
+                        text: {
+                            var secs = new Date();
+                            secs.setSeconds(model.trackedTime);
+                            return secs.toLocaleString(Qt.locale(), "hh:mm:ss");
+                        }
                     }
                 }
             }
 
+            onClicked: {
+                var dialog = pageStack.push(Qt.resolvedUrl("TaskDialog.qml"))
+                dialog.name = model.name
+                dialog.description = model.description
+                dialog.tags = model.tags
+                dialog.urgency = model.urgency
+                dialog.due = Date.fromLocaleString(Qt.locale(), model.due, "dd-MM-yyyy hh:mm:ss")
+                dialog.accepted.connect(function() {
+                    listModel.append({
+                                         name: dialog.name,
+                                         description: dialog.description,
+                                         tags: dialog.tags,
+                                         urgency: dialog.urgency,
+                                         due: dialog.due.toLocaleString(Qt.locale(), "dd-MM-yyyy hh:mm:ss"),
+                                         trackedTime: model.trackedTime,
+                                         forToday: model.forToday,
+                                         isTimerOn: model.isTimerOn,
+                                         timerStartedAt: model.timerStartedAt,
+                                         isCompleted: model.isCompleted
+                                     });
+//                    dao.insertTask()
+                    listModel.remove(model);
+                })
+            }
+
             menu: ContextMenu {
                 MenuItem {
-                    text: "Show Task"
+                    text: "Start Timer"
                     onClicked: {
-                        var dialog = pageStack.push(Qt.resolvedUrl("TaskDialog.qml"))
-                        dialog.name = model.name
-                        dialog.description = model.description
-                        dialog.tags = model.tags
-                        dialog.urgency = model.urgency
-                        dialog.due = Date.fromLocaleString(Qt.locale(), model.due, "dd-MM-yyyy hh:mm:ss")
-                        dialog.accepted.connect(function() {
-                            listModel.append({
-                                                 name: dialog.name,
-                                                 description: dialog.description,
-                                                 tags: dialog.tags,
-                                                 urgency: dialog.urgency,
-                                                 due: dialog.due.toLocaleString(Qt.locale(), "dd-MM-yyyy hh:mm:ss"),
-                                                 trackedTime: model.trackedTime,
-                                                 isCompleted: model.isCompleted
-                                             });
-                            listModel.remove(model);
-                        })
+                        // TODO: Dao.startTimer() - fields isTimerOn and timerStartedAt are to be updated
                     }
                 }
                 MenuItem {
                     text: "Complete Task"
-                    onClicked: listModel.remove(model)
+                    onClicked: listModel.remove(model) // Dao.completeTask()
                 }
 
                 MenuItem {
                     text: "Remove Task"
-                    onClicked: listModel.remove(model.index)
+                    onClicked: listModel.remove(model.index) // Dao.removeTask()
                 }
             }
         }
@@ -186,13 +241,19 @@ Page {
                     dialog.accepted.connect(function() {
                         dao.insertTask({
                                            name: dialog.name,
-                                           description: dialog.description,
-                                           tags: dialog.tags,
-                                           urgency: dialog.urgency,
-                                           due: dialog.due.toLocaleString(Qt.locale(), "dd-MM-yyyy hh:mm:ss"),
-                                           trackedTime: "00:00:00",
-                                           isCompleted: false
-                                       });
+                                            description: dialog.description,
+                                            tags: dialog.tags,
+                                            urgency: dialog.urgency,
+                                            due: dialog.due.toLocaleString(Qt.locale(), "dd-MM-yyyy hh:mm:ss"),
+                                            trackedTime: 0,
+                                            forToday: false,
+                                            isTimerOn: false,
+                                            timerStartedAt: Date.now(),
+                                            isCompleted: false
+                                       },
+                        function(task) {
+                            showTasks();
+                        });
                     });
                 }
             }
@@ -204,32 +265,32 @@ Page {
             }
         }
 
-        Component.onCompleted: refreshTasks()
+        Component.onCompleted: showTasks()
     }
 
     ButtonLayout {
         id: buttons
-        anchors.bottom: parent.bottom
+        anchors {bottom: parent.bottom; bottomMargin: 20}
         width: parent.width
 
         Button {
             text: "today"
-            onClicked: { currentMode = todayTasksMode; refreshTasks(); }
+            onClicked: { currentMode = todayTasksMode; showTasks(); }
         }
 
         Button {
             text: "due sort"
-            onClicked: { currentMode = dueTasksMode; refreshTasks(); }
+            onClicked: { currentMode = dueTasksMode; showTasks(); }
         }
 
         Button {
             text: "urgency sort"
-            onClicked: { currentMode = urgencyTasksMode; refreshTasks(); }
+            onClicked: { currentMode = urgencyTasksMode; showTasks(); }
         }
 
         Button {
             text: "completed"
-            onClicked: { currentMode = completedTasksMode; refreshTasks(); }
+            onClicked: { currentMode = completedTasksMode; showTasks(); }
         }
     }
 }
