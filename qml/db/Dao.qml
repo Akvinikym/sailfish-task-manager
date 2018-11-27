@@ -44,6 +44,13 @@ QtObject {
         callback(task);
     }
 
+    function removeTask(task, callback) {
+        db.transaction(function (tx) {
+            tx.executeSql("DELETE FROM tasks WHERE name = ?", [task.name]);
+        });
+        callback();
+    }
+
     function updateTask(task, callback) {
         db.transaction(function (tx) {
             tx.executeSql("DELETE FROM tasks WHERE name = ?", [task.name]);

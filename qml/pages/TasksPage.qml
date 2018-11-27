@@ -20,98 +20,61 @@ Page {
         id: dao
     }
     
-    property var tasks: [{name: "Make projecttttttttttttt",
-            description: "Make a QML project",
-            tags: "studying",
-            urgency: 0,
-            due: "28-11-2018 12:00:00",
-            trackedTime: 4228,
-            forToday: true,
-            isTimerOn: false,
-            timerStartedAt: Date.now(),
-            isCompleted: false},
-        {name: "Make assignment",
-            description: "Make a QML project",
-            tags: "studying",
-            urgency: 1,
-            due: "27-11-2018 11:00:00",
-            trackedTime: 424242,
-            forToday: true,
-            isTimerOn: false,
-            timerStartedAt: Date.now(),
-            isCompleted: false},
-        {name: "Cook dinner",
-            description: "Prepare macorones",
-            tags: "cooking",
-            urgency: 2,
-            due: "29-11-2018 20:00:00",
-            trackedTime: 100,
-            forToday: false,
-            isTimerOn: false,
-            timerStartedAt: Date.now(),
-            isCompleted: true
-        }]
-    
     function showTasks() {
         listModel.clear();
-        
-        // update tasks before showing them
-        var allTasks = tasks.map(function (t) {
-            if (!t.isTimerOn) return t;
-            
-            t.trackedTime = Date.now() - t.timerStartedAt;
-            // TODO: Dao.updateTask(t)
-            return t;
-        });
-        
-        switch (currentMode) {
-        case mainPage.todayTasksMode: {
-            dao.getTasks(function(tasks) {
-                var todayTasks = tasks
-                .filter(function (task) { return task.forToday && !task.isCompleted})
+        dao.getTasks(function(tasks) {
+
+            // update tasks
+            var allTasks = tasks.map(function (t) {
+                if (!t.isTimerOn) return t;
+
+                t.trackedTime = Date.now() - t.timerStartedAt;
+                // TODO: Dao.updateTask(t)
+                return t;
+            });
+
+            // show tasks
+            switch (currentMode) {
+            case mainPage.todayTasksMode:
+                var todayTasks = allTasks
+                    .filter(function (task) { return task.forToday && !task.isCompleted});
                 listModel.append(todayTasks);
-            });
-        }
-        break;
-        case mainPage.dueTasksMode:
-            dao.getTasks(function(tasks) {
-                var sortedByDue = tasks
-                .filter(function (task) { return !task.isCompleted})
-                .sort(function (t1, t2) {
-                    var dateT1 = Date.fromLocaleString(Qt.locale(), t1.due, "dd-MM-yyyy hh:mm:ss");
-                    var dateT2 = Date.fromLocaleString(Qt.locale(), t2.due, "dd-MM-yyyy hh:mm:ss")
-                    if (dateT1 > dateT2) {
-                        return 1;
-                    } else if (dateT1 < dateT2) {
-                        return -1;
-                    }
-                    return 0;
-                });
+                break;
+            case mainPage.dueTasksMode:
+                var sortedByDue = allTasks
+                    .filter(function (task) { return !task.isCompleted})
+                    .sort(function (t1, t2) {
+                        var dateT1 = Date.fromLocaleString(Qt.locale(), t1.due, "dd-MM-yyyy hh:mm:ss");
+                        var dateT2 = Date.fromLocaleString(Qt.locale(), t2.due, "dd-MM-yyyy hh:mm:ss")
+                        if (dateT1 > dateT2) {
+                            return 1;
+                        } else if (dateT1 < dateT2) {
+                            return -1;
+                        }
+                        return 0;
+                    });
                 listModel.append(sortedByDue);
-            });
-            break;
-        case mainPage.urgencyTasksMode:
-            dao.getTasks(function(tasks) {
+                break;
+            case mainPage.urgencyTasksMode:
                 var sortedByUrgency = allTasks
-                .filter(function (task) { return !task.isCompleted})
-                .sort(function (t1, t2) {
-                    if (t1.urgency < t2.urgency) {
-                        return 1;
-                    } else if (t1.urgency > t2.urgency) {
-                        return -1;
-                    }
-                    return 0;
-                });
+                    .filter(function (task) { return !task.isCompleted})
+                    .sort(function (t1, t2) {
+                        if (t1.urgency < t2.urgency) {
+                            return 1;
+                        } else if (t1.urgency > t2.urgency) {
+                            return -1;
+                        }
+                        return 0;
+                    });
                 listModel.append(sortedByUrgency);
-            });
-            break;
-        case mainPage.completedTasksMode:
-            dao.getTasks(function(tasks) {
+                break;
+            case mainPage.completedTasksMode:
                 var completedTasks = allTasks.filter(function (task) { return task.isCompleted});
                 listModel.append(completedTasks);
-            });
-            break;
-        }
+                break;
+            }
+
+        });
     }
     
     SilicaListView {
@@ -220,13 +183,70 @@ Page {
                     }
                 }
                 MenuItem {
-                    text: "Complete Task"
-                    onClicked: listModel.remove(model) // Dao.completeTask()
+                    text: model.forToday ? "Remove from Today Tasks" : "Set for Today"
+                    onClicked: {
+                        if (model.forToday) {
+                            dao.updateTask({
+                                               name: model.name,
+                                               description: model.description,
+                                               tags: model.tags,
+                                               urgency: model.urgency,
+                                               due: model.due.toLocaleString(Qt.locale(), "dd-MM-yyyy hh:mm:ss"),
+                                               trackedTime: model.trackedTime,
+                                               forToday: false,
+                                               isTimerOn: model.isTimerOn,
+                                               timerStartedAt: model.timerStartedAt,
+                                               isCompleted: model.isCompleted
+                                           },
+                                           function (task) {
+                                                showTasks();
+                                           });
+                        } else {
+                            dao.updateTask({
+                                               name: model.name,
+                                               description: model.description,
+                                               tags: model.tags,
+                                               urgency: model.urgency,
+                                               due: model.due.toLocaleString(Qt.locale(), "dd-MM-yyyy hh:mm:ss"),
+                                               trackedTime: model.trackedTime,
+                                               forToday: true,
+                                               isTimerOn: model.isTimerOn,
+                                               timerStartedAt: model.timerStartedAt,
+                                               isCompleted: model.isCompleted
+                                           },
+                                           function (task) {
+                                                showTasks();
+                                           });
+                        }
+                    }
                 }
-                
+
+                MenuItem {
+                    text: "Complete Task"
+                    onClicked:
+                        dao.updateTask({
+                                           name: model.name,
+                                           description: model.description,
+                                           tags: model.tags,
+                                           urgency: model.urgency,
+                                           due: model.due.toLocaleString(Qt.locale(), "dd-MM-yyyy hh:mm:ss"),
+                                           trackedTime: model.trackedTime,
+                                           forToday: false,
+                                           isTimerOn: false,
+                                           timerStartedAt: model.timerStartedAt,
+                                           isCompleted: true
+                                       },
+                                       function (task) {
+                                            showTasks();
+                                       });
+                }
                 MenuItem {
                     text: "Remove Task"
-                    onClicked: listModel.remove(model.index) // Dao.removeTask()
+                    onClicked:
+                        dao.removeTask(model,
+                                       function (task) {
+                                            showTasks();
+                                       });
                 }
             }
         }
@@ -259,12 +279,6 @@ Page {
                                            showTasks();
                                        });
                     });
-                }
-            }
-            MenuItem {
-                text: "Remove All Records"
-                onClicked: {
-                    listModel.clear()
                 }
             }
         }

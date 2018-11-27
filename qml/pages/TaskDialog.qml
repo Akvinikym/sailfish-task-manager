@@ -46,14 +46,7 @@ Dialog {
             id: tagsField
             width: parent.width
 
-            text: {
-                var str = "";
-                for (var i = 0; i < tags.length; i++) {
-                    str += tags[i] + ", ";
-                }
-                str.substring(0, str.length - 2);
-            }
-
+            text: tags
             validator: RegExpValidator { regExp: /^[a-z ,.'-]+$/i }
             placeholderText: "health, sport..."
             label: "Tags, splitted by comma"
@@ -129,7 +122,7 @@ Dialog {
         if (result == DialogResult.Accepted) {
             name = nameField.text
             description = descriptionField.text
-            tags = tagsField.text.split(",")
+            tags = tagsField.text
             urgency = urgencyField.sliderValue
             due = Date.fromLocaleString(Qt.locale(), dueFieldDate.value + " " + dueFieldTime.value, "ddd MMM d yyyy hh:mm:ss")
         }
