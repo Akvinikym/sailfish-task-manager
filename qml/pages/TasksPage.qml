@@ -23,31 +23,7 @@ Page {
     
     function showTasks() {
         listModel.clear();
-        dao.getTasks(function(tasks) {
-
-            // update tasks
-            var allTasks = tasks.map(function (t) {
-                if (t.isTimerOn) {
-                    var measure = t.timerLastMeasure;
-                    t.trackedTime += Date.now() - measure;
-                    t.timerLastMeasure = Date.now();
-
-                    dao.updateTask({
-                                       name: t.name,
-                                       description: t.description,
-                                       tags: t.tags,
-                                       urgency: t.urgency,
-                                       due: t.due.toLocaleString(Qt.locale(), "dd-MM-yyyy hh:mm:ss"),
-                                       trackedTime: t.trackedTime,
-                                       forToday: t.forToday,
-                                       isTimerOn: t.isTimerOn,
-                                       timerLastMeasure: t.timerLastMeasure,
-                                       isCompleted: t.isCompleted
-                                   },
-                                   function (task) {});
-                }
-                return t;
-            });
+        dao.getTasks(function(allTasks) {
 
             // show tasks
             switch (currentMode) {
@@ -349,7 +325,28 @@ Page {
 
     Refresher {
         onSecondPassed: {
+            for (var i = 0; i < listModel.count; i++) {
+                var t = listModel.get(i);
+                if (t.isTimerOn) {
+                    var measure = t.timerLastMeasure;
+                    t.trackedTime += Date.now() - measure;
+                    t.timerLastMeasure = Date.now();
 
+                    dao.updateTask({
+                                       name: t.name,
+                                       description: t.description,
+                                       tags: t.tags,
+                                       urgency: t.urgency,
+                                       due: t.due.toLocaleString(Qt.locale(), "dd-MM-yyyy hh:mm:ss"),
+                                       trackedTime: t.trackedTime,
+                                       forToday: t.forToday,
+                                       isTimerOn: t.isTimerOn,
+                                       timerLastMeasure: t.timerLastMeasure,
+                                       isCompleted: t.isCompleted
+                                   },
+                                   function (task) {});
+                }
+            }
         }
     }
 }
