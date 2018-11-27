@@ -26,10 +26,13 @@ QtObject {
         var database = LocalStorage.openDatabaseSync("tasks", "1.0");
         database.readTransaction(function (tx) {
             var result = tx.executeSql("SELECT * FROM tasks;");
-            callback(result.rows);
+            var tasks = []
+            for (var i = 0; i < result.rows.length; i++) {
+                tasks.push(result.rows.item(i));
+            }
+            callback(tasks);
         });
     }
-    //function retrieveBooks(callback) {...}
     function insertTask(task, callback) {
         db.transaction(function (tx) {
             tx.executeSql("INSERT INTO tasks
@@ -40,8 +43,22 @@ QtObject {
         });
         callback(task);
     }
-    //function updateBook(id, author, title) {...}
-    //function deleteBook(id) {...}
+
+    function updateTask(task, callback) {
+        db.transaction(function (tx) {
+            tx.executeSql("DELETE FROM tasks WHERE name = ?", [task.name]);
+            insertTask(task, callback);
+        });
+    }
+
+    function startTimer(taskname) {
+        db.transaction(function (tx) {
+            tx.executeSql("UPDATE tasks
+                SET isTimerOn = true, timerStartedAt = ?
+                WHERE name = ?", [Date.now(), taskname]);
+        });
+    }
+
     Component.onCompleted: {
         db = LocalStorage.openDatabaseSync("tasks", "1.0"); initTasksDatabase();
     }
