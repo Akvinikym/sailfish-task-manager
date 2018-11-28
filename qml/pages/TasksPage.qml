@@ -7,6 +7,8 @@ import Nemo.Notifications 1.0
 
 Page {
     id: mainPage
+
+    property var tasksWithTimerOn: []
     
     property int todayTasksMode: 0
     property int dueTasksMode: 1
@@ -369,6 +371,7 @@ Page {
     Refresher {
         onSecondPassed: {
             checkDueTime();
+            tasksWithTimerOn = [];
             for (var i = 0; i < listModel.count; i++) {
                 var t = listModel.get(i);
 
@@ -388,9 +391,10 @@ Page {
                                        isTimerOn: t.isTimerOn,
                                        timerLastMeasure: t.timerLastMeasure,
                                        isCompleted: t.isCompleted,
-                                       notified: model.notified
+                                       notified: t.notified
                                    },
                                    function (task) {});
+                    tasksWithTimerOn.push(t);
                 }
             }
         }

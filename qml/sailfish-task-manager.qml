@@ -5,6 +5,8 @@ import "pages"
 ApplicationWindow
 {
     initialPage: Component { TasksPage { } }
+
     cover: Qt.resolvedUrl("cover/CoverPage.qml")
+
     allowedOrientations: defaultAllowedOrientations
 }

@@ -6,7 +6,7 @@ QtObject {
 
     function initTasksDatabase() {
         db.transaction(function (tx) {
-            tx.executeSql("DROP TABLE tasks");
+//            tx.executeSql("DROP TABLE tasks");
             tx.executeSql("CREATE TABLE IF NOT EXISTS tasks (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
