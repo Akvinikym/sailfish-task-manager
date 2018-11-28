@@ -9,7 +9,7 @@ Cover {
     Label {
         id: nameLabel
         anchors.top: parent.top
-        text: qsTr("Active Taks")
+        text: qsTr("Active Tasks")
     }
 
     SilicaListView {

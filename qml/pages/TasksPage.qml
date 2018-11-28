@@ -39,7 +39,8 @@ Page {
                 listModel.append(completedTasks);
                 break;
             case mainPage.allTasksMode:
-                listModel.append(allTasks);
+                var notCompletedTasks = allTasks.filter(function (task) { return !task.isCompleted});
+                listModel.append(notCompletedTasks);
                 break;
             }
         });
