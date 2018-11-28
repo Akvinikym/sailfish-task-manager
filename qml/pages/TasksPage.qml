@@ -3,6 +3,7 @@ import Sailfish.Silica 1.0
 import QtQuick.Layouts 1.1
 import "../db"
 import refresher.TaskManager 1.0
+import Nemo.Notifications 1.0
 
 Page {
     id: mainPage
@@ -164,7 +165,8 @@ Page {
                                        forToday: model.forToday,
                                        isTimerOn: model.isTimerOn,
                                        timerLastMeasure: model.timerLastMeasure,
-                                       isCompleted: model.isCompleted
+                                       isCompleted: model.isCompleted,
+                                       notified: model.notified
                                    },
                                    function (task) {
                                         showTasks();
@@ -186,7 +188,8 @@ Page {
                                            forToday: false,
                                            isTimerOn: !model.isTimerOn,
                                            timerLastMeasure: Date.now(),
-                                           isCompleted: model.isCompleted
+                                           isCompleted: model.isCompleted,
+                                           notified: model.notified
                                        },
                                        function (task) {
                                             showTasks();
@@ -207,7 +210,8 @@ Page {
                                                forToday: false,
                                                isTimerOn: model.isTimerOn,
                                                timerLastMeasure: model.timerLastMeasure,
-                                               isCompleted: model.isCompleted
+                                               isCompleted: model.isCompleted,
+                                               notified: model.notified
                                            },
                                            function (task) {
                                                 showTasks();
@@ -223,7 +227,8 @@ Page {
                                                forToday: true,
                                                isTimerOn: model.isTimerOn,
                                                timerLastMeasure: model.timerLastMeasure,
-                                               isCompleted: model.isCompleted
+                                               isCompleted: model.isCompleted,
+                                               notified: model.notified
                                            },
                                            function (task) {
                                                 showTasks();
@@ -245,7 +250,8 @@ Page {
                                            forToday: false,
                                            isTimerOn: false,
                                            timerLastMeasure: model.timerLastMeasure,
-                                           isCompleted: true
+                                           isCompleted: true,
+                                           notified: model.notified
                                        },
                                        function (task) {
                                             showTasks();
@@ -284,7 +290,8 @@ Page {
                                            forToday: false,
                                            isTimerOn: false,
                                            timerLastMeasure: Date.now(),
-                                           isCompleted: false
+                                           isCompleted: false,
+                                           notified: false
                                        },
                                        function(task) {
                                            showTasks();
@@ -304,7 +311,9 @@ Page {
         
         Button {
             text: "today"
-            onClicked: { currentMode = todayTasksMode; showTasks(); }
+            onClicked: {
+                currentMode = todayTasksMode; showTasks();
+            }
         }
         
         Button {
@@ -323,10 +332,46 @@ Page {
         }
     }
 
+    Notification {
+        id: notification
+
+        onClicked: console.log("Clicked")
+    }
+
+    function checkDueTime() {
+        dao.getTasks(function (tasks) {
+            for (var i = 0; i < tasks.length; i++) {
+                var t = tasks[i]
+                var dueTime = Date.fromLocaleString(Qt.locale(), t.due, "dd-MM-yyyy hh:mm:ss");
+                var day = 86400000
+                if (!t.notified && !t.isCompleted && dueTime - Date.now() < day) {
+                    notification.summary = t.name + " is due soon!";
+                    notification.body = "deadline: " + t.due;
+                    notification.publish();
+                    dao.updateTask({
+                                       name: t.name,
+                                       description: t.description,
+                                       tags: t.tags,
+                                       urgency: t.urgency,
+                                       due: t.due.toLocaleString(Qt.locale(), "dd-MM-yyyy hh:mm:ss"),
+                                       trackedTime: t.trackedTime,
+                                       forToday: t.forToday,
+                                       isTimerOn: t.isTimerOn,
+                                       timerLastMeasure: t.timerLastMeasure,
+                                       isCompleted: t.isCompleted,
+                                       notified: true
+                                   }, function (tasks) {});
+                }
+            }
+        });
+    }
+
     Refresher {
         onSecondPassed: {
+            checkDueTime();
             for (var i = 0; i < listModel.count; i++) {
                 var t = listModel.get(i);
+
                 if (t.isTimerOn) {
                     var measure = t.timerLastMeasure;
                     t.trackedTime += Date.now() - measure;
@@ -342,7 +387,8 @@ Page {
                                        forToday: t.forToday,
                                        isTimerOn: t.isTimerOn,
                                        timerLastMeasure: t.timerLastMeasure,
-                                       isCompleted: t.isCompleted
+                                       isCompleted: t.isCompleted,
+                                       notified: model.notified
                                    },
                                    function (task) {});
                 }
