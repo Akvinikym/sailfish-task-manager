@@ -4,7 +4,7 @@
 <context>
     <name>CoverPage</name>
     <message>
-        <source>Active Taks</source>
+        <source>Active Tasks</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
