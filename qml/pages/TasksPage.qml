@@ -4,6 +4,7 @@ import QtQuick.Layouts 1.1
 import "../db"
 import refresher.TaskManager 1.0
 import Nemo.Notifications 1.0
+import org.nemomobile.dbus 2.0
 
 Page {
     id: mainPage
@@ -31,6 +32,22 @@ Page {
     
     Dao {
         id: dao
+    }
+
+
+    Item {
+        id: alarmControl
+
+        function setAlarm() {
+            alarm.call('newAlarm', undefined);
+        }
+
+        DBusInterface {
+            id: alarm
+            service: 'com.jolla.clock'
+            path: '/'
+            iface: 'com.jolla.clock'
+        }
     }
     
     function showTasks() {
@@ -251,6 +268,7 @@ Page {
             }
 
             PullDownMenu {
+                quickSelect: true
                 MenuItem {
                     text: "Add New Task"
                     onClicked: {
@@ -270,6 +288,9 @@ Page {
                                                notified: false
                                            },
                                            function(task) {
+                                               if (task.urgency == urgencyHigh) {
+                                                   alarmControl.setAlarm();
+                                               }
                                                showTasks();
                                            });
                         });
